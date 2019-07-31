@@ -40,7 +40,7 @@ bool differByOne(char *word1, char *word2) {
         // If current characters don't match 
         if (word1[i] != word2[j]) 
         { 
-            if (changes == 1) 
+            if (changes == 1) //When 2nd change found
                 return false; 
 
             //Move forward for the longer word
