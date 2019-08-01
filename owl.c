@@ -8,13 +8,37 @@ bool is1LetterChange(char *word1, char *word2);
 bool is1LetterAdded(char *word1, char *word2, int length1, int length2);
 
 int main() {
-    char s1[100], s2[100];
+    // char s1[100], s2[100];
+    char words[1000][20];   //max number of words - 1000, max length of word - 20 characters
+    // scanf("%s %s", s1, s2);
 
-    scanf("%s %s", s1, s2);
+    // printf("\n%s and %s differ by 1? %d", s1, s2, differByOne(s1, s2));
+    // printf("\n");
 
-    printf("\n%s and %s differ by 1? %d", s1, s2, differByOne(s1, s2));
-    printf("\n");
+    int i = 1, wordCount = 0;
+    char c;
+    char *z = malloc(sizeof(char));
+    while((c = getchar())) {
+        if (c == ' ' || c == '\t' || c == '\n' || c == EOF) {
+            strcpy(words[wordCount], z + 1);
+            z = malloc(sizeof(char));
+            i = 1;
+            wordCount++;
 
+            if (c == '\n'){
+                break;
+            }
+        } else {
+            *(z+i) = c;
+            i += 1;
+            z = realloc(z, i * sizeof(char));
+        }
+    }
+
+    for (int i = 0; i < wordCount; i++){
+        printf("\n%s", words[i]);
+    }
+    
     return EXIT_SUCCESS;
 }
 
