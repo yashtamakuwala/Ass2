@@ -2,10 +2,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
+#include "Graph.h"
 
 bool differByOne(char *word1, char *word2);
 bool is1LetterChange(char *word1, char *word2);
 bool is1LetterAdded(char *word1, char *word2, int length1, int length2);
+Graph constructGraph(Graph g, int wordCount, char **words);
 
 int main() {
     // char s1[100], s2[100];
@@ -25,7 +27,7 @@ int main() {
             i = 1;
             wordCount++;
 
-            if (c == '\n'){
+            if (c == EOF ){
                 break;
             }
         } else {
@@ -35,11 +37,27 @@ int main() {
         }
     }
 
-    for (int i = 0; i < wordCount; i++){
-        printf("\n%s", words[i]);
+    printf("\nDictionary:");
+    for (i = 0; i < wordCount; i++) {
+        printf("\n%d: %s", i, words[i]);
     }
+    printf("\n");
+    Graph g = newGraph(wordCount);
+    for(i = 0; i < wordCount; i++) {
+        for (int j = 0; j < wordCount; j++) {
+            if(differByOne(words[i], words[j]) == true) {
+                insertEdge(newEdge(i, j), g);
+            }
+        }
+    }
+
+    showGraph(g);
     
     return EXIT_SUCCESS;
+}
+
+Graph constructGraph(Graph g, int wordCount, char **words) {
+    return g;
 }
 
 bool differByOne(char *word1, char *word2) {

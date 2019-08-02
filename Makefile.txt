@@ -12,3 +12,6 @@ owl: $(OBJ)
 .PHONY: clean
 clean:
 	rm -f *.o owl core
+
+cc : owl.c Graph.h GraphAM.c
+	cc -o owl owl.c GraphAM.c
