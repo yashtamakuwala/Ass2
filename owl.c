@@ -18,23 +18,13 @@ int main() {
     // printf("\n");
 
     int i = 1, wordCount = 0;
-    char c;
-    char *z = malloc(sizeof(char));
-    while((c = getchar())) {
-        if (c == ' ' || c == '\t' || c == '\n' || c == EOF) {
-            strcpy(words[wordCount], z + 1);
-            z = malloc(sizeof(char));
-            i = 1;
-            wordCount++;
-
-            if (c == EOF ){
-                break;
-            }
-        } else {
-            *(z+i) = c;
-            i += 1;
-            z = realloc(z, i * sizeof(char));
-        }
+    char word[20];
+    wordCount = 0;
+    while((scanf("%s", word)) == 1) {
+        // printf("\n%s", word);
+        strcpy(words[wordCount], word);
+        printf("\nwords[i] :%s", words[wordCount]);
+        wordCount++;
     }
 
     printf("\nDictionary:");
