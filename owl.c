@@ -5,25 +5,21 @@
 #include "Graph.h"
 
 bool differByOne(char *word1, char *word2);
-bool is1LetterChange(char *word1, char *word2);
-bool is1LetterAdded(char *word1, char *word2, int length1, int length2);
-Graph constructGraph(Graph g, int wordCount, char **words);
+void dfs(Graph g, Vertex rootv, int numV);
+void dfsR(Graph g, Vertex v, int numV, int *order, int *visited);
+void printArray(char *word, int *v, int numV);
+int* mallocArray(int n);
+void resetArray(int *v, int numv);
+// #define UNVISITED 0
 
 int main() {
-    // char s1[100], s2[100];
     char words[1000][20];   //max number of words - 1000, max length of word - 20 characters
-    // scanf("%s %s", s1, s2);
-
-    // printf("\n%s and %s differ by 1? %d", s1, s2, differByOne(s1, s2));
-    // printf("\n");
-
     int i = 1, wordCount = 0;
     char word[20];
     wordCount = 0;
+
     while((scanf("%s", word)) == 1) {
-        // printf("\n%s", word);
         strcpy(words[wordCount], word);
-        printf("\nwords[i] :%s", words[wordCount]);
         wordCount++;
     }
 
@@ -32,7 +28,9 @@ int main() {
         printf("\n%d: %s", i, words[i]);
     }
     printf("\n");
+
     Graph g = newGraph(wordCount);
+
     for(i = 0; i < wordCount; i++) {
         for (int j = 0; j < wordCount; j++) {
             if(differByOne(words[i], words[j]) == true) {
@@ -42,12 +40,68 @@ int main() {
     }
 
     showGraph(g);
-    
+    dfs(g, 0, wordCount);
     return EXIT_SUCCESS;
 }
 
-Graph constructGraph(Graph g, int wordCount, char **words) {
-    return g;
+void dfs(Graph g, Vertex rootv, int numV) {//'wrapper' for recursive dfs
+   int *visited = mallocArray(numV);  // ... handles disconnected graphs
+   resetArray(visited, numV);
+   printArray("Visited: ", visited, numV);
+   int order = 0;
+   Vertex startv = rootv;             // this is the starting vertex
+   int allVis = 0;                    // assume not all visited
+   while (!allVis) {                  // as long as there are vertices
+      dfsR(g, startv, numV, &order, visited);
+      allVis = 1;                     // are all visited now?
+      for (Vertex w = 0; w < numV && allVis; w++) { // look for more
+         if (visited[w] == -1) { 
+            printf("Graph is disconnected\n"); // debug
+            allVis = 0;               // found an unvisited vertex
+            startv = w;              // next loop dfsR this vertex
+         }
+      }
+   }
+   printArray("Visited: ", visited, numV);
+   free(visited);
+   return;
+}
+
+void dfsR(Graph g, Vertex v, int numV, int *order, int *visited) {
+    visited[v] = *order;
+    printf("\nVertex v:%d, numv : %d, order: %d Visited[v]: %d",v,numV,*order, visited[v]);
+    *order = *order+1;
+    for (Vertex w = v + 1; w < numV; w++) {
+        // printf("\nv: %d w: %d", v,w);
+        if (isEdge(newEdge(v,w), g) && visited[w] == -1) {
+            printf("\nValid edge v: %d w: %d", v, w);
+            dfsR(g, w, numV, order, visited);
+        }
+    }
+    return;
+}
+
+void printArray(char *word, int *v, int numV) {
+    printf("\n%s: ",word);
+
+    // printf("%d", *v);
+    if (numV > 0) {
+        printf("{ ");
+        for (int i = 0; i < numV; i++) {
+            printf("%d ",v[i]);
+        }
+        printf("}\n");
+    }
+}
+
+int* mallocArray(int n) {
+    return malloc(n * sizeof(int));
+}
+
+void resetArray(int *v, int numv) {
+    for(int i = 0; i < numv; i++) {
+        v[i] = UNVISITED;
+    }
 }
 
 bool differByOne(char *word1, char *word2) {
@@ -98,57 +152,4 @@ bool differByOne(char *word1, char *word2) {
         changes++; 
   
     return changes == 1;
-}
-
-bool is1LetterAdded(char *word1, char *word2, int length1, int length2){
-    char *largerWord, *smallerWord;
-    int changes = 0;
-
-    if (length1 > length2) {
-        strcpy(largerWord, word1);
-        strcpy(smallerWord, word2);
-    } else {
-        strcpy(smallerWord, word1);
-        strcpy(largerWord, word2);
-    }
-
-    int i = 0, j = 0;
-    
-    while (i < length1 && j < length2) {
-        if (word1[i] != word2[j]) {
-            if (length1 > length2) {
-                i++;
-            } else {
-                j++;
-            }
-            changes += 1;
-        } else {
-            i++;
-            j++;
-        }
-    }
-    
-    return true;
-}
-
-bool is1LetterChange(char *word1, char *word2){
-
-    //Same word is incorrect
-    if (strcmp(word1, word2) == 0) {
-        return false;
-    }
-
-    bool isChange = false;
-    
-    for (int i = 0; word1[i] != '\0'; i++) {
-        if (word1[i] != word2[i]){
-            if (isChange == true) { //if another change detected then return false
-                return false;
-            } else {
-                isChange = true;
-            }
-        }    
-    }
-
-    return isChange;
 }
