@@ -1,4 +1,5 @@
 CC=~cs9024/bin/dcc
+# CC = cc
 CFLAGS=-I.
 DEPS=Graph.h Quack.h
 OBJ=GraphAM.o Quack.o owl.o
@@ -13,5 +14,5 @@ owl: $(OBJ)
 clean:
 	rm -f *.o owl core
 
-cc : owl.c Graph.h GraphAM.c
-	cc -o owl owl.c GraphAM.c
+owl: owl.c graphAm.c Quack.c
+
