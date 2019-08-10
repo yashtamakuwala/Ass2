@@ -31,12 +31,11 @@ int main() {
         }
     }
 
-    printf("Dictionary:");
+    printf("Dictionary");
     for (i = 0; i < wordCount; i++) {
         printf("\n%d: %s", i, words[i]);
     }
     
-
     Graph g = newGraph(wordCount);
 
     for(i = 0; i < wordCount; i++) {
@@ -80,22 +79,28 @@ void dfs(Graph g, Vertex rootv, int numV, char words[1000][20]) {
 
     printf("Longest ladder length: %d", maxLength);
     printf("\nLongest ladders:");
+    // printf("\nCounter: %d", counter);
+    // if (counter == 0 || counter == 1) {
+    //     counter = 0;
+    // }
+    
     for (int i = 0; i <= counter && i < 100; i ++){    //Maximum there will be 100 paths
-        printf("\n%2d: ", i + 1);
+        
         Quack tempQuack = allQuacks[i];
         int j = 0;
         while (!isEmptyQuack(tempQuack)) {
-            if (j == maxLength - 1) {
+            if (j == 0) {
+                printf("\n%2d: ", i + 1);
                 printf("%s", words[pop(tempQuack)]);
             } else {
-                printf("%s->", words[pop(tempQuack)]);
+                printf(" -> %s", words[pop(tempQuack)]);
             }
             j++;
         }
     }
-
-   free(visited);
-   return;
+    printf("\n");
+    free(visited);
+    return;
 }
 
 void dfsR(Graph g, Vertex v, int numV, int *order, int *visited, int *counter,
@@ -109,7 +114,7 @@ void dfsR(Graph g, Vertex v, int numV, int *order, int *visited, int *counter,
         // showQuack(allQuacks[0]);
         *counter = 0;
         *maxLength = *currLength;
-        copyQuackAtIndex(tempQuack, 0, allQuacks);
+        copyQuackAtIndex(tempQuack, *counter, allQuacks);
     } else if (*currLength == *maxLength) {
         *counter = *counter + 1;
         copyQuackAtIndex(tempQuack, *counter, allQuacks);
@@ -272,8 +277,14 @@ bool differByOne(char *word1, char *word2) {
     } 
   
     // If any word has last character as extra
-    if (i < length1 || j < length2) 
-        changes++; 
+    // if (i < length1 || j < length2) 
+    //     changes++; 
+
+    if (j < length2) {
+        changes += length2 - j;
+    } else {
+        changes+= length1 - i;
+    }
   
     return changes == 1;
 }
