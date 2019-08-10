@@ -6,19 +6,15 @@
 #include "Quack.h"
 
 bool differByOne(char *word1, char *word2);
-void dfs(Graph g, Vertex rootv, int numV);
-void dfsR(Graph g, Vertex v, int numV, int *order, int *visited, int *counter, Quack *allQuacks, int *maxLength, int *currLength, int *lastConnected);
+void dfs(Graph g, Vertex rootv, int numV, char words[1000][20]);
+void dfsR(Graph g, Vertex v, int numV, int *order, int *visited, int *counter, Quack *allQuacks, int *maxLength, int *currLength, int *lastConnected, Quack tempQuack);
 void printArray(char *word, int *v, int numV);
 int* mallocArray(int n);
 void resetArray(int *v, int numv);
+void copyQuackAtIndex(Quack srcQuack, int index, Quack *allQuacks);
+void popLastElement(Quack srcQuack);
+void createDuplicateQuackTillNum(Quack *allQuacks, int ithQuack, int num) ;
 // #define UNVISITED 0
-
-struct Path{
-    Quack q;
-    int length;
-} paths[100];
-
-// typedef struct path *Path;
 
 int main() {
     char words[1000][20];   //max number of words - 1000, max length of word - 20 characters
@@ -35,11 +31,11 @@ int main() {
         }
     }
 
-    printf("\nDictionary:");
+    printf("Dictionary:");
     for (i = 0; i < wordCount; i++) {
         printf("\n%d: %s", i, words[i]);
     }
-    printf("\n");
+    
 
     Graph g = newGraph(wordCount);
 
@@ -51,12 +47,13 @@ int main() {
         }
     }
 
+    printf("\nOrdered Word Ladder Graph\n");
     showGraph(g);
-    dfs(g, 0, wordCount);
+    dfs(g, 0, wordCount, words);
     return EXIT_SUCCESS;
 }
 
-void dfs(Graph g, Vertex rootv, int numV) {
+void dfs(Graph g, Vertex rootv, int numV, char words[1000][20]) {
 
     int *visited = mallocArray(numV);  
     resetArray(visited, numV);
@@ -72,63 +69,123 @@ void dfs(Graph g, Vertex rootv, int numV) {
 
     int maxLength = 0, currLength = 0;
     int counter = 0;
-    while (!allVis) {                  
+    while (startv <= numV) {                  
         
         int lastConnected = startv;
-        // printf("%p", &lastConnected);
-        // printf("\nCalling dfsR, startv: %d", startv);
-        dfsR(g, startv, numV, &order, visited, &counter, allQuacks, &maxLength, &currLength, &lastConnected);
-        allVis = 1;                     // are all visited now?
-        // showQuack(allQuacks[0]);
-        // for (Vertex w = 0; w < numV && allVis; w++) { // look for more
-        //     if (visited[w] == UNVISITED) { 
-        //         printf("Graph is disconnected\n"); // debug
-        //         allVis = 0;               // found an unvisited vertex
-        //         startv = w;              // next loop dfsR this vertex
-        //     }
-        // }
+        Quack tempQuack = createQuack();
+        dfsR(g, startv, numV, &order, visited, &counter, allQuacks, &maxLength, &currLength, &lastConnected, tempQuack);
+        currLength = 0;
+        startv++;
     }
-   printArray("Visited: ", visited, numV);
 
-//    showQuack(allQuacks[0]);
-//    showQuack(allQuacks[1]);
+    printf("Longest ladder length: %d", maxLength);
+    printf("\nLongest ladders:");
+    for (int i = 0; i <= counter && i < 100; i ++){    //Maximum there will be 100 paths
+        printf("\n%2d: ", i + 1);
+        Quack tempQuack = allQuacks[i];
+        int j = 0;
+        while (!isEmptyQuack(tempQuack)) {
+            if (j == maxLength - 1) {
+                printf("%s", words[pop(tempQuack)]);
+            } else {
+                printf("%s->", words[pop(tempQuack)]);
+            }
+            j++;
+        }
+    }
 
-   for (int i = 0; i < counter; i ++){
-       showQuack(allQuacks[i]);
-   }
    free(visited);
    return;
 }
 
-void dfsR(Graph g, Vertex v, int numV, int *order, int *visited, int *counter, Quack *allQuacks, int *maxLength, int *currLength, int *lastConnected) {
+void dfsR(Graph g, Vertex v, int numV, int *order, int *visited, int *counter,
+ Quack *allQuacks, int *maxLength, int *currLength, int *lastConnected, Quack tempQuack) {
     // printf("\nInside dfsR");
-    qush(v, allQuacks[*counter]);
+    qush(v, tempQuack);
     *currLength = *currLength + 1;
+    
+    if (*currLength > *maxLength && *currLength != 1) {
+        // printf("\ncurrLength > maxLength");
+        // showQuack(allQuacks[0]);
+        *counter = 0;
+        *maxLength = *currLength;
+        copyQuackAtIndex(tempQuack, 0, allQuacks);
+    } else if (*currLength == *maxLength) {
+        *counter = *counter + 1;
+        copyQuackAtIndex(tempQuack, *counter, allQuacks);
+    } 
+
     visited[v] = *order;
-    printf("\nVertex v:%d, numv : %d, order: %d Visited[v]: %d", v, numV, *order, visited[v]);
+    // printf("\nVertex v:%d, numv : %d, order: %d Visited[v]: %d", v, numV, *order, visited[v]);
     *order = *order + 1;
 
+    //Start looking from the successor only
     for (Vertex w = v + 1; w < numV; w++) {
         
         //TODO: change unvisited to last child of node, last child is when no more children>currNode
         if (isEdge(newEdge(v,w), g)) {
-            
-            if (*lastConnected < w && visited[w] == UNVISITED) {
-                printf("\nlastConnected : %d less than vertex w: %d", *lastConnected, w);
-                printf("\nValid edge v: %d w: %d\n", v, w);
-                *lastConnected = w;
-                dfsR(g, w, numV, order, visited, counter, allQuacks, maxLength, currLength, lastConnected);
-            }  else {
-                int i = 0;
-                printf("\nlastConnected : %d not less than vertex w: %d", *lastConnected, w);
-                *counter = *counter + 1;
-                push(v, allQuacks[*counter]);
-                // dfsR(g, w, numV, order, visited, counter, allQuacks, maxLength, currLength, lastConnected);
-            } 
+            // printf("\nlastConnected : %d less than vertex w: %d", *lastConnected, w);
+            // printf("\nValid edge v: %d w: %d\n", v, w);
+            // *lastConnected = w;
+            dfsR(g, w, numV, order, visited, counter, allQuacks, 
+                maxLength, currLength, lastConnected, tempQuack);
+            popLastElement(tempQuack);
+            *currLength = *currLength - 1;
+                
+            // else {
+            //     int i = 0;
+            //     printf("\nlastConnected : %d not less than vertex w: %d", *lastConnected, w);
+            //     *counter = *counter + 1;
+            //     push(v, allQuacks[*counter]);
+            //     // dfsR(g, w, numV, order, visited, counter, allQuacks, maxLength, currLength, lastConnected);
+            // } 
         }
-        //New path begins here
+        
     }
     return;
+}
+
+void popLastElement(Quack srcQuack) {
+    // printf("\n ***********popping last element");
+    // showQuack(srcQuack);
+    Quack tempQuack = createQuack();
+    int a ;
+    while(!isEmptyQuack(srcQuack)) {
+        a = pop(srcQuack);
+        push(a, tempQuack);
+    }
+
+    pop(tempQuack);
+    while (!isEmptyQuack(tempQuack)) {
+        a = pop(tempQuack);
+        push(a, srcQuack);
+    }
+    // printf("\nAfter popping ");
+    // showQuack(srcQuack);
+}
+
+void copyQuackAtIndex(Quack srcQuack, int index, Quack *allQuacks) {
+    // printf("\ncopy quack");
+    // printf("\n srcQuack");
+    // showQuack(srcQuack);
+
+    
+    Quack tempQuack = createQuack();
+    allQuacks[index] = createQuack();   //TODO: use another way to null/destroy????
+    int a;
+    while(!isEmptyQuack(srcQuack)) {
+        a = pop(srcQuack);
+        qush(a, allQuacks[index]);
+        push(a, tempQuack);
+    }
+
+    while (!isEmptyQuack(tempQuack)) {
+        a = pop(tempQuack);
+        push(a, srcQuack);
+    }
+
+    // printf("\n Quack index: %d ", index);
+    // showQuack(allQuacks[index]);
 }
 
 // create 
