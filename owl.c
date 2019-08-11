@@ -1,3 +1,12 @@
+/**
+ * @file owl.c
+ * @author Yash Tamakuwala(z5248584)
+ * @brief Client side that uses Graph and Quack interfaces to read input, create graph and find longest ladder length and path
+ * @version 0.1
+ * 
+ * @copyright Copyright (c) 2019
+ * 
+ */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -5,25 +14,31 @@
 #include "Graph.h"
 #include "Quack.h"
 
+#define VISITED 1
+#define MAXWORDS 1000
+#define MAXWORDLENGTH 21
+#define MAXPATHS 100
+
 bool differByOne(char *word1, char *word2);
-void dfs(Graph g, Vertex rootv, int numV, char words[1000][20]);
+void dfs(Graph g, Vertex rootv, int numV, char words[MAXWORDS][MAXWORDLENGTH]);
 void dfsR(Graph g, Vertex v, int numV, int *counter, Quack *allQuacks,
  int *maxLength, int *currLength, Quack tempQuack);
-void printArray(char *word, int *v, int numV);
-int* mallocArray(int n);
-void resetArray(int *v, int numv);
+
 void copyQuackAtIndex(Quack srcQuack, int index, Quack *allQuacks);
 void popLastElement(Quack srcQuack);
-void createDuplicateQuackTillNum(Quack *allQuacks, int ithQuack, int num) ;
-// #define UNVISITED 0
+void createDuplicateQuackTillNum(Quack *allQuacks, int ithQuack, int num);
+void resetArray(int *v, int numv);
+void setVisitedArray(Quack srcQuack, int *visited);
+
+
 
 int main() {
-    char words[1000][20];   //max number of words - 1000, max length of word - 20 characters
-    int i = 1, wordCount = 0;
-    char word[20], prevWord[20];
-    wordCount = 0;
+    char words[MAXWORDS][MAXWORDLENGTH];   //max number of words - 1000, max length of word - 20 characters
+    int wordCount = 0;
+    char word[MAXWORDLENGTH], prevWord[MAXWORDLENGTH];
 
-    while((scanf("%s", word)) == 1) {
+    //Reads input and rejects duplicate words
+    while ((scanf("%s", word)) == 1) {
         if (strcmp(word, prevWord) != 0) {
             strcpy(words[wordCount], word);
             strcpy(prevWord, word);
@@ -31,60 +46,92 @@ int main() {
         }
     }
 
-    printf("Dictionary");
-    for (i = 0; i < wordCount; i++) {
-        printf("\n%d: %s", i, words[i]);
-    }
-    
-    Graph g = newGraph(wordCount);
+    //Make dictionary if there are words
+    if (wordCount > 0) {
+        printf("Dictionary");
+        for (int i = 0; i < wordCount; i++) {
+            printf("\n%d: %s", i, words[i]);
+        }
+        
+        Graph g = newGraph(wordCount);
 
-    for(i = 0; i < wordCount; i++) {
-        for (int j = 0; j < wordCount; j++) {
-            if(differByOne(words[i], words[j]) == true) {
-                insertEdge(newEdge(i, j), g);
+        for (int i = 0; i < wordCount - 1; i++) {
+            for (int j = i + 1; j < wordCount; j++) {
+                if (differByOne(words[i], words[j]) == true) {
+                    insertEdge(newEdge(i, j), g);
+                }
             }
         }
-    }
 
-    printf("\nOrdered Word Ladder Graph\n");
-    showGraph(g);
-    if (wordCount > 0) {
+        printf("\nOrdered Word Ladder Graph\n");
+        showGraph(g);
         dfs(g, 0, wordCount, words);
+        freeGraph(g);
     }
     return EXIT_SUCCESS;
 }
 
-void dfs(Graph g, Vertex rootv, int numV, char words[1000][20]) {
-
-    int *visited = mallocArray(numV);  
-    resetArray(visited, numV);
-
-    int order = 0;
-    Vertex startv = rootv;             
-    int allVis = 0;
-    Quack allQuacks[100];
-    char *word = "";
-    for (int i = 0; i < 100; i++) {
-        allQuacks[i] = createQuack();
+/**
+ * @brief function that sets an array to UNVISITED
+ * 
+ * @param v 
+ * @param numv 
+ */
+void resetArray(int *v, int numv) {
+    for (int i = 0; i < numv; i++) {
+        v[i] = UNVISITED;
     }
+}
+
+/**
+ * @brief wrapper function for recursive-DFS, gets longest ladder length and prints those paths
+ * 
+ * @param g 
+ * @param rootv 
+ * @param numV 
+ * @param words 
+ */
+void dfs(Graph g, Vertex rootv, int numV, char words[MAXWORDS][MAXWORDLENGTH]) {
+
+    int visited[numV];
+    resetArray(visited, numV);
 
     int maxLength = 0, currLength = 0;
     int counter = 0;
-    while (startv <= numV) {                  
-        
-        int lastConnected = startv;
-        Quack tempQuack = createQuack();
-        dfsR(g, startv, numV, &counter, allQuacks, &maxLength, &currLength, tempQuack);
-        currLength = 0;
+
+    Vertex startv = rootv;             
+    Quack allQuacks[MAXWORDS];
+    Quack tempQuack = createQuack();
+
+    char *word = "";
+
+    for (int i = 0; i < MAXWORDS; i++) {
+        allQuacks[i] = createQuack();
+    }
+    
+    while (startv <= numV) {         
+
+        //A longer path from a certain root vertex won't exist if it is present in the list of visited 
+        // nodes of previous longest path         
+        if (visited[startv] == UNVISITED) {
+            
+            dfsR(g, startv, numV, &counter, allQuacks, &maxLength, &currLength, tempQuack);
+            setVisitedArray(allQuacks[0], visited);
+            makeEmptyQuack(tempQuack);
+            currLength = 0;
+        }
         startv++;
     }
 
     printf("Longest ladder length: %d", maxLength);
     printf("\nLongest ladders:");
-    for (int i = 1; i <= counter && i < 100; i ++){    //Maximum there will be 100 paths
+
+    for (int i = 1; i <= counter && i < MAXPATHS; i ++){    //Maximum there will be MAXPATHS to print
         
         Quack tempQuack = allQuacks[i];
         int j = 0;
+
+        //Pop one index from the quack at a time and print the correspoding word from the dictionary
         while (!isEmptyQuack(tempQuack)) {
             word = words[pop(tempQuack)];
             if (strlen(word) > 0) {
@@ -99,170 +146,131 @@ void dfs(Graph g, Vertex rootv, int numV, char words[1000][20]) {
         }
     }
     printf("\n");
-    free(visited);
+
+    for (int i = 0; i < MAXWORDS; i++) {
+        destroyQuack(allQuacks[i]);
+    }
+    destroyQuack(tempQuack);
     return;
 }
 
+/**
+ * @brief Recursive DFS that maintains max path Length and current path length 
+ * finds longest paths and puts it into allQuacks array
+ * 
+ * @param g 
+ * @param v 
+ * @param numV 
+ * @param counter 
+ * @param allQuacks 
+ * @param maxLength 
+ * @param currLength 
+ * @param tempQuack 
+ */
 void dfsR(Graph g, Vertex v, int numV, int *counter, Quack *allQuacks,
  int *maxLength, int *currLength, Quack tempQuack) {
-    // printf("\nInside dfsR");
+
     qush(v, tempQuack);
     *currLength = *currLength + 1;
     
-    // printf("\ncurrLength %d : maxLength %d", *currLength, *maxLength);
-    if (*currLength > *maxLength /* && *currLength != 1 */) {
-        // printf("\ncurrLength %d > maxLength %d", *currLength, *maxLength);
-        // showQuack(allQuacks[0]);
+    //If true then it means we have found a new maximum length path
+    if (*currLength > *maxLength) {
         *counter = 1;
         *maxLength = *currLength;
         copyQuackAtIndex(tempQuack, *counter, allQuacks);
+        //if true then means we have found 1 more path of same max length and store the path
     } else if (*currLength == *maxLength) {
-        // printf("\ncurrLength = %d = maxLength", *currLength);
         *counter = *counter + 1;
         copyQuackAtIndex(tempQuack, *counter, allQuacks);
     } 
 
-    // printf("\nVertex v:%d, numv : %d, order: %d Visited[v]: %d", v, numV, *order, visited[v]);
-
     //Start looking from the successor only
     for (Vertex w = v + 1; w < numV; w++) {
-        
-        //TODO: change unvisited to last child of node, last child is when no more children>currNode
+        // Go further only if its a successor
         if (isEdge(newEdge(v,w), g)) {
-            // printf("\nlastConnected : %d less than vertex w: %d", *lastConnected, w);
-            // printf("\nValid edge v: %d w: %d\n", v, w);
-            // *lastConnected = w;
             dfsR(g, w, numV, counter, allQuacks, maxLength, currLength, tempQuack);
             popLastElement(tempQuack);
-            *currLength = *currLength - 1;
-                
-            // else {
-            //     int i = 0;
-            //     printf("\nlastConnected : %d not less than vertex w: %d", *lastConnected, w);
-            //     *counter = *counter + 1;
-            //     push(v, allQuacks[*counter]);
-            //     // dfsR(g, w, numV, order, visited, counter, allQuacks, maxLength, currLength, lastConnected);
-            // } 
-        }
-        
+            *currLength = *currLength - 1;        
+        }  
     }
     return;
 }
 
+/**
+ * @brief function that pops the last element from the quack. 
+ * this function will remove '2' from the Quack - [0 -> 1 -> 2]
+ * 
+ * @param srcQuack 
+ */
 void popLastElement(Quack srcQuack) {
-    // printf("\n ***********popping last element");
-    // showQuack(srcQuack);
-    Quack tempQuack = createQuack();
+    Quack auxQuack = createQuack();
     int a ;
-    while(!isEmptyQuack(srcQuack)) {
+    while (!isEmptyQuack(srcQuack)) {
         a = pop(srcQuack);
-        push(a, tempQuack);
+        push(a, auxQuack);
     }
 
-    pop(tempQuack);
-    while (!isEmptyQuack(tempQuack)) {
-        a = pop(tempQuack);
+    pop(auxQuack);
+    while (!isEmptyQuack(auxQuack)) {
+        a = pop(auxQuack);
         push(a, srcQuack);
     }
     // printf("\nAfter popping ");
     // showQuack(srcQuack);
+    destroyQuack(auxQuack);
 }
 
+/**
+ * @brief function to copy a quack into a particular index of array of quacks
+ * 
+ * @param srcQuack 
+ * @param index 
+ * @param allQuacks 
+ */
 void copyQuackAtIndex(Quack srcQuack, int index, Quack *allQuacks) {
-    // printf("\ncopy quack");
-    // printf("\n srcQuack");
-    // showQuack(srcQuack);
-
     
-    Quack tempQuack = createQuack();
-    allQuacks[index] = createQuack();   //TODO: use another way to null/destroy????
+    Quack auxQuack = createQuack();
     int a;
-    while(!isEmptyQuack(srcQuack)) {
+    while (!isEmptyQuack(srcQuack)) {
         a = pop(srcQuack);
         qush(a, allQuacks[index]);
-        push(a, tempQuack);
+        push(a, auxQuack);
     }
 
-    while (!isEmptyQuack(tempQuack)) {
-        a = pop(tempQuack);
+    while (!isEmptyQuack(auxQuack)) {
+        a = pop(auxQuack);
         push(a, srcQuack);
     }
 
-    // printf("\n Quack index: %d ", index);
-    // showQuack(allQuacks[index]);
+    destroyQuack(auxQuack);
 }
 
-// create 
-void createDuplicateQuackTillNum(Quack *allQuacks, int ithQuack, int num) {
-    Quack tempQuack = createQuack();
-    int nextQuack = ithQuack + 1;
-    int a;
-    while(a != num) {
-        int a = pop(allQuacks[ithQuack]);
-        qush(a, allQuacks[nextQuack]);
-        push(a, tempQuack);
-    }
-
-    while (!isEmptyQuack(tempQuack)) {
-        a = pop(tempQuack);
-        push(a, allQuacks[ithQuack]);
-    }
-}
-
-void printArray(char *word, int *v, int numV) {
-    printf("\n%s: ",word);
-
-    // printf("%d", *v);
-    if (numV > 0) {
-        printf("{ ");
-        for (int i = 0; i < numV; i++) {
-            printf("%d ",v[i]);
-        }
-        printf("}\n");
-    }
-}
-
-int* mallocArray(int n) {
-    return malloc(n * sizeof(int));
-}
-
-void resetArray(int *v, int numv) {
-    for(int i = 0; i < numv; i++) {
-        v[i] = UNVISITED;
-    }
-}
-
+/**
+ * @brief Checks if the two words have an edit distance of '1'
+ * 
+ * @param word1 
+ * @param word2 
+ * @return true 
+ * @return false 
+ */
 bool differByOne(char *word1, char *word2) {
 
     int length1 = strlen(word1);
     int length2 = strlen(word2);
     int changes = 0, i = 0, j = 0;
 
-    //Same length then maybe 1 letter change
-    // if (length1 == length2) {
-    //     return is1LetterChange(word1, word2);
-
-    // //Length differs by 1 then maybe letter added
-    // } else if (abs(length1 - length2) == 1) {
-        
-    // } else {
-
-    //     return false;
-    // }
-
     while (i < length1 && j < length2) { 
         // If current characters don't match 
-        if (word1[i] != word2[j]) 
-        { 
+        if (word1[i] != word2[j]) { 
             if (changes == 1) //When 2nd change found
                 return false; 
 
             //Move forward for the longer word
-            if (length1 > length2) 
+            if (length1 > length2) {
                 i++; 
-            else if (length1 < length2) 
+            } else if (length1 < length2) {
                 j++; 
-            else { //Iflengths of both strings is same 
+            } else { //Iflengths of both strings is same 
                 i++; 
                 j++; 
             } 
@@ -274,16 +282,36 @@ bool differByOne(char *word1, char *word2) {
             j++; 
         } 
     } 
-  
-    // If any word has last character as extra
-    // if (i < length1 || j < length2) 
-    //     changes++; 
 
+    //When one word is a perfect substring of larger word
     if (j < length2) {
         changes += length2 - j;
     } else {
-        changes+= length1 - i;
+        changes += length1 - i;
     }
   
     return changes == 1;
+}
+
+/**
+ * @brief Set the Visited Array object to VISITED based on the elements of Quack
+ * 
+ * @param srcQuack 
+ * @param visited 
+ */
+void setVisitedArray(Quack srcQuack, int *visited) {
+    Quack auxQuack = createQuack();  
+    int a;
+    while (!isEmptyQuack(srcQuack)) {
+        a = pop(srcQuack);
+        visited[a] = VISITED;
+        push(a, auxQuack);
+    }
+
+    while (!isEmptyQuack(auxQuack)) {
+        a = pop(auxQuack);
+        push(a, srcQuack);
+    }
+
+    destroyQuack(auxQuack);
 }
