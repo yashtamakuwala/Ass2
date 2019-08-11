@@ -7,7 +7,8 @@
 
 bool differByOne(char *word1, char *word2);
 void dfs(Graph g, Vertex rootv, int numV, char words[1000][20]);
-void dfsR(Graph g, Vertex v, int numV, int *order, int *visited, int *counter, Quack *allQuacks, int *maxLength, int *currLength, int *lastConnected, Quack tempQuack);
+void dfsR(Graph g, Vertex v, int numV, int *counter, Quack *allQuacks,
+ int *maxLength, int *currLength, Quack tempQuack);
 void printArray(char *word, int *v, int numV);
 int* mallocArray(int n);
 void resetArray(int *v, int numv);
@@ -19,14 +20,13 @@ void createDuplicateQuackTillNum(Quack *allQuacks, int ithQuack, int num) ;
 int main() {
     char words[1000][20];   //max number of words - 1000, max length of word - 20 characters
     int i = 1, wordCount = 0;
-    char word[20];
+    char word[20], prevWord[20];
     wordCount = 0;
 
     while((scanf("%s", word)) == 1) {
-        if (strcmp(word, words[wordCount]) == 0) {
-            continue;
-        } else {
+        if (strcmp(word, prevWord) != 0) {
             strcpy(words[wordCount], word);
+            strcpy(prevWord, word);
             wordCount++;
         }
     }
@@ -48,7 +48,9 @@ int main() {
 
     printf("\nOrdered Word Ladder Graph\n");
     showGraph(g);
-    dfs(g, 0, wordCount, words);
+    if (wordCount > 0) {
+        dfs(g, 0, wordCount, words);
+    }
     return EXIT_SUCCESS;
 }
 
@@ -60,9 +62,9 @@ void dfs(Graph g, Vertex rootv, int numV, char words[1000][20]) {
     int order = 0;
     Vertex startv = rootv;             
     int allVis = 0;
-    Quack allQuacks[1000];
-
-    for (int i = 0; i < 1000; i++) {
+    Quack allQuacks[100];
+    char *word = "";
+    for (int i = 0; i < 100; i++) {
         allQuacks[i] = createQuack();
     }
 
@@ -72,30 +74,28 @@ void dfs(Graph g, Vertex rootv, int numV, char words[1000][20]) {
         
         int lastConnected = startv;
         Quack tempQuack = createQuack();
-        dfsR(g, startv, numV, &order, visited, &counter, allQuacks, &maxLength, &currLength, &lastConnected, tempQuack);
+        dfsR(g, startv, numV, &counter, allQuacks, &maxLength, &currLength, tempQuack);
         currLength = 0;
         startv++;
     }
 
     printf("Longest ladder length: %d", maxLength);
     printf("\nLongest ladders:");
-    // printf("\nCounter: %d", counter);
-    // if (counter == 0 || counter == 1) {
-    //     counter = 0;
-    // }
-    
-    for (int i = 0; i <= counter && i < 100; i ++){    //Maximum there will be 100 paths
+    for (int i = 1; i <= counter && i < 100; i ++){    //Maximum there will be 100 paths
         
         Quack tempQuack = allQuacks[i];
         int j = 0;
         while (!isEmptyQuack(tempQuack)) {
-            if (j == 0) {
-                printf("\n%2d: ", i + 1);
-                printf("%s", words[pop(tempQuack)]);
-            } else {
-                printf(" -> %s", words[pop(tempQuack)]);
+            word = words[pop(tempQuack)];
+            if (strlen(word) > 0) {
+                if (j == 0 ) {
+                    printf("\n%2d: ", i);
+                    printf("%s", word);
+                } else {
+                    printf(" -> %s", word);
+                }
+                j++;
             }
-            j++;
         }
     }
     printf("\n");
@@ -103,26 +103,26 @@ void dfs(Graph g, Vertex rootv, int numV, char words[1000][20]) {
     return;
 }
 
-void dfsR(Graph g, Vertex v, int numV, int *order, int *visited, int *counter,
- Quack *allQuacks, int *maxLength, int *currLength, int *lastConnected, Quack tempQuack) {
+void dfsR(Graph g, Vertex v, int numV, int *counter, Quack *allQuacks,
+ int *maxLength, int *currLength, Quack tempQuack) {
     // printf("\nInside dfsR");
     qush(v, tempQuack);
     *currLength = *currLength + 1;
     
-    if (*currLength > *maxLength && *currLength != 1) {
-        // printf("\ncurrLength > maxLength");
+    // printf("\ncurrLength %d : maxLength %d", *currLength, *maxLength);
+    if (*currLength > *maxLength /* && *currLength != 1 */) {
+        // printf("\ncurrLength %d > maxLength %d", *currLength, *maxLength);
         // showQuack(allQuacks[0]);
-        *counter = 0;
+        *counter = 1;
         *maxLength = *currLength;
         copyQuackAtIndex(tempQuack, *counter, allQuacks);
     } else if (*currLength == *maxLength) {
+        // printf("\ncurrLength = %d = maxLength", *currLength);
         *counter = *counter + 1;
         copyQuackAtIndex(tempQuack, *counter, allQuacks);
     } 
 
-    visited[v] = *order;
     // printf("\nVertex v:%d, numv : %d, order: %d Visited[v]: %d", v, numV, *order, visited[v]);
-    *order = *order + 1;
 
     //Start looking from the successor only
     for (Vertex w = v + 1; w < numV; w++) {
@@ -132,8 +132,7 @@ void dfsR(Graph g, Vertex v, int numV, int *order, int *visited, int *counter,
             // printf("\nlastConnected : %d less than vertex w: %d", *lastConnected, w);
             // printf("\nValid edge v: %d w: %d\n", v, w);
             // *lastConnected = w;
-            dfsR(g, w, numV, order, visited, counter, allQuacks, 
-                maxLength, currLength, lastConnected, tempQuack);
+            dfsR(g, w, numV, counter, allQuacks, maxLength, currLength, tempQuack);
             popLastElement(tempQuack);
             *currLength = *currLength - 1;
                 
