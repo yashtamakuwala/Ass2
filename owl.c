@@ -37,6 +37,7 @@ int main() {
     char words[MAXWORDS][MAXWORDLENGTH];   //max number of words - 1000, max length of word - 20 characters
     int wordCount = 0;
     char word[MAXWORDLENGTH], prevWord[MAXWORDLENGTH];
+    char word[MAXWORDLENGTH], prevWord[MAXWORDLENGTH] = "";
 
     //Reads input and rejects duplicate words
     while ((scanf("%s", word)) == 1) {
@@ -94,7 +95,7 @@ void resetArray(int *v, int numv) {
  */
 void dfs(Graph g, Vertex rootv, int numV, char words[MAXWORDS][MAXWORDLENGTH]) {
 
-    int visited[numV];
+    int visited[numV + 1];
     resetArray(visited, numV);
 
     int maxLength = 0, currLength = 0;
@@ -170,7 +171,6 @@ void dfs(Graph g, Vertex rootv, int numV, char words[MAXWORDS][MAXWORDLENGTH]) {
  */
 void dfsR(Graph g, Vertex v, int numV, int *counter, Quack *allQuacks,
  int *maxLength, int *currLength, Quack tempQuack) {
-
     qush(v, tempQuack);
     *currLength = *currLength + 1;
     
