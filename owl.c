@@ -229,7 +229,7 @@ void popLastElement(Quack srcQuack) {
  * @param allQuacks 
  */
 void copyQuackAtIndex(Quack srcQuack, int index, Quack *allQuacks) {
-    
+    makeEmptyQuack(allQuacks[index]);
     Quack auxQuack = createQuack();
     int a;
     while (!isEmptyQuack(srcQuack)) {
