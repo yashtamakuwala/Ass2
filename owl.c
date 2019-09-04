@@ -36,7 +36,6 @@ void setVisitedArray(Quack srcQuack, int *visited);
 int main() {
     char words[MAXWORDS][MAXWORDLENGTH];   //max number of words - 1000, max length of word - 20 characters
     int wordCount = 0;
-    char word[MAXWORDLENGTH], prevWord[MAXWORDLENGTH];
     char word[MAXWORDLENGTH], prevWord[MAXWORDLENGTH] = "";
 
     //Reads input and rejects duplicate words
